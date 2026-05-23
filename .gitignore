@@ -1,0 +1,51 @@
+# Сборка Gradle
+.gradle/
+build/
+**/build/
+out/
+**/out/
+
+# Gradle wrapper должен храниться в репозитории
+!gradle/wrapper/gradle-wrapper.jar
+
+# Локальные настройки Gradle и Kotlin
+.kotlin/
+local.properties
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse
+.classpath
+.project
+.settings/
+.apt_generated/
+.factorypath
+.springBeans
+.sts4-cache/
+
+# NetBeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# VS Code
+.vscode/
+
+# ОС и временные файлы
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Секреты и локальные переменные окружения
+.env
+.env.*
+!.env.example
