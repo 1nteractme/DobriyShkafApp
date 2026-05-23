@@ -6,7 +6,6 @@ import javax.swing.SwingUtilities
 import javax.swing.UIManager
 
 // Точка входа frontend-приложения.
-
 fun main() {
     SwingUtilities.invokeLater {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())

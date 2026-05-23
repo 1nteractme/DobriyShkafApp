@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Добрый Шкаф - документация</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="page">
+    <header class="header">
+        <p class="eyebrow">Добрый Шкаф</p>
+        <div class="brand-title">
+            <img class="site-logo" src="res/logo.png" alt="Логотип Добрый Шкаф">
+            <h1>Dobriy Shkaf Application</h1>
+        </div>
+        <p class="lead">Проект <code>Dobriy Shkaf Application</code> представляет собой монорепозиторий и собранное
+            десктоп приложение, созданное для некоммерческой организации "Добрый Шкаф" в рамках выполнения студенческого
+            социального заказа.</p>
+    </header>
+
+    <section class="tabs-shell" aria-label="Документация проекта">
+        <div class="tabs" role="tablist" aria-label="Разделы документации">
+            <button class="tab" id="tab-tech" type="button" role="tab" aria-selected="true" aria-controls="panel-tech"
+                    data-tab="tech">
+                Техническая документация
+            </button>
+
+            <button class="tab" id="tab-user" type="button" role="tab" aria-selected="false" aria-controls="panel-user"
+                    data-tab="user">
+                Пользовательская документация
+            </button>
+
+            <button class="tab" id="tab-updates" type="button" role="tab" aria-selected="false"
+                    aria-controls="panel-updates" data-tab="updates">
+                Обновления
+            </button>
+        </div>
+
+        <article class="panel active" id="panel-tech" role="tabpanel" aria-labelledby="tab-tech" tabindex="0">
+            <h2>Техническая документация</h2>
+            <p>Монорепозиторий содержит настольный frontend на Kotlin и backend на Java/Spring. Модули живут отдельно и
+                собираются через Gradle wrapper.</p>
+
+            <div class="grid">
+                <section class="info-card">
+                    <h3>Frontend</h3>
+                    <p>Модуль <code>frontend</code> реализует Swing-приложение с MVI-подходом для удобной работы с
+                        данными.</p>
+                </section>
+
+                <section class="info-card">
+                    <h3>Backend</h3>
+                    <p>Модуль <code>backend</code> предоставляет Spring REST API для получения, создания, обновления и
+                        удаления семей.</p>
+                </section>
+            </div>
+
+            <h3>Требования</h3>
+            <ul>
+                <li>JDK 17.</li>
+                <li>Gradle wrapper из репозитория: <code>gradlew</code> или <code>gradlew.bat</code>.</li>
+            </ul>
+
+            <h3>Команды</h3>
+            <p>Посмотреть все доступные Gradle-задачи:</p>
+            <pre><code>./gradlew tasks --all</code></pre>
+
+            <p>Запуск frontend:</p>
+            <pre><code>./gradlew :frontend:run</code></pre>
+
+            <p>Сборка frontend:</p>
+            <pre><code>./gradlew :frontend:build</code></pre>
+
+            <p>Сборка backend:</p>
+            <pre><code>./gradlew :backend:build</code></pre>
+
+            <p>Сборка всего проекта:</p>
+            <pre><code>./gradlew build</code></pre>
+
+            <h3>REST API</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>Метод</th>
+                    <th>Путь</th>
+                    <th>Назначение</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><code>GET</code></td>
+                    <td><code>/api/families-admin/all</code></td>
+                    <td>Получить полный список семей.</td>
+                </tr>
+                <tr>
+                    <td><code>GET</code></td>
+                    <td><code>/api/families-admin/{id}</code></td>
+                    <td>Получить одну семью по идентификатору.</td>
+                </tr>
+                <tr>
+                    <td><code>POST</code></td>
+                    <td><code>/api/families-admin/create</code></td>
+                    <td>Создать новую карточку семьи.</td>
+                </tr>
+                <tr>
+                    <td><code>POST</code></td>
+                    <td><code>/api/families-admin/update</code></td>
+                    <td>Полностью обновить существующую карточку.</td>
+                </tr>
+                <tr>
+                    <td><code>POST</code></td>
+                    <td><code>/api/families-admin/delete/{id}</code></td>
+                    <td>Удалить карточку семьи.</td>
+                </tr>
+                </tbody>
+            </table>
+
+            <h3>Настройка адреса backend</h3>
+            <p>По умолчанию frontend обращается к:</p>
+            <pre><code>http://185.204.0.88:8082/api/families-admin</code></pre>
+
+            <p>Адрес можно переопределить системным свойством:</p>
+            <pre><code>./gradlew :frontend:run -Ddatabase.api.base=http://host:port/api/families-admin</code></pre>
+
+            <p>Или переменной окружения:</p>
+            <pre><code>DATABASE_API_BASE=http://host:port/api/families-admin ./gradlew :frontend:run</code></pre>
+
+            <h3>Работа с ветками</h3>
+            <p>
+                Основная интеграционная ветка: <code>main</code>. После завершения задачи изменения из
+                <code>frontend</code> или <code>backend</code> объединяются в <code>main</code> через PR или merge.
+            </p>
+        </article>
+
+        <article class="panel" id="panel-user" role="tabpanel" aria-labelledby="tab-user" tabindex="0">
+            <img src="res/preview.png" alt="User Interface Preview" style="width: 100%">
+            <h2>Пользовательская документация</h2>
+            <p>
+                Приложение открывается как настольное окно <strong>"Отчёт город Спутник"</strong> и помогает вести
+                карточки семей: просматривать список, создавать новые записи, редактировать данные и удалять
+                неактуальные карточки.
+            </p>
+
+            <h3>Начало работы</h3>
+            <ol>
+                <li>Запустите приложение командой <code>./gradlew :frontend:run</code> или установив, а затем запустив
+                    <code>Dobriy Shkaf.exe</code>.
+                </li>
+                <li>Дождитесь загрузки списка семей в левой таблице.</li>
+                <li>Выберите нужную строку, чтобы открыть карточку семьи справа.</li>
+            </ol>
+
+            <div class="green-note">Если список не загружается, проверьте наличие Интернета на персональном
+                компьютере.
+            </div>
+            <div class="red-note">
+                При столкновении с какими-либо сложностями или неполадками мы крайне рекомендуем связаться с
+                разработчиками в Telegram.
+                <code>@interactme</code><br>
+                <code>@igorapplications</code>
+            </div>
+
+            <h3>Основные кнопки</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>Кнопка</th>
+                    <th>Что делает</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><code>Обновить</code></td>
+                    <td>Загружает актуальный список семей.</td>
+                </tr>
+                <tr>
+                    <td><code>Новая</code></td>
+                    <td>Очищает форму и переводит экран в режим создания новой карточки.</td>
+                </tr>
+                <tr>
+                    <td><code>Сохранить</code></td>
+                    <td>Создает новую карточку или сохраняет изменения выбранной семьи.</td>
+                </tr>
+                <tr>
+                    <td><code>Удалить</code></td>
+                    <td>Удаляет выбранную карточку после подтверждения.</td>
+                </tr>
+                </tbody>
+            </table>
+
+            <h3>Работа с таблицей</h3>
+            <ul>
+                <li>Список семей находится слева.</li>
+                <li>Выбор строки открывает карточку семьи в форме справа.</li>
+                <li>Таблица сортируется стандартными средствами JTable.</li>
+                <li>После сохранения или удаления список обновляется в интерфейсе.</li>
+            </ul>
+
+            <h3>Заполнение карточки семьи</h3>
+            <p>В форме доступны контактные, социальные и учетные поля:</p>
+            <ul>
+                <li>номер семьи, ФИО родителей, телефон, адрес;</li>
+                <li>информация о детях и социальные признаки;</li>
+                <li>даты визитов и обменов;</li>
+                <li>пожертвования, обмен, остаток и суммы баллов;</li>
+                <li>пожертвование в рублях, доплата, тип оплаты и количество взятых вещей.</li>
+            </ul>
+
+            <h3>Даты и раскрывающиеся блоки</h3>
+            <ul>
+                <li>Для дат используется встроенный календарь рядом с полем.</li>
+                <li>Кнопка очистки рядом с календарем сбрасывает дату.</li>
+                <li>Группы <code>Дарение</code>, <code>Обмен</code> и <code>Остаток</code> можно свернуть или раскрыть.
+                </li>
+            </ul>
+
+            <h3>Сохранение изменений</h3>
+            <ol>
+                <li>Выберите карточку в таблице или нажмите <code>Новая</code>.</li>
+                <li>Заполните поля формы.</li>
+                <li>Нажмите <code>Сохранить</code>.</li>
+                <li>Проверьте строку статуса внизу окна: там отображаются загрузка, сохранение, ошибки и количество
+                    записей.
+                </li>
+            </ol>
+        </article>
+
+        <article class="panel" id="panel-updates" role="tabpanel" aria-labelledby="tab-updates" tabindex="0">
+            <h2>Обновления проекта</h2>
+            <p>
+                В этом разделе отображаются последние изменения из GitHub-репозитория
+                <a href="https://github.com/1nteractme/DobriyShkafApp" target="_blank"
+                   rel="noreferrer">DobriyShkafApp</a>.
+            </p>
+
+            <div class="updates-toolbar">
+                <p class="updates-status" id="updates-status">Загрузка последних коммитов...</p>
+                <button class="refresh-updates" id="refresh-updates" type="button">Обновить</button>
+            </div>
+
+            <ol class="updates-list" id="updates-list" aria-live="polite"></ol>
+        </article>
+    </section>
+</main>
+<script src="script.js"></script>
+</body>
+</html>
