@@ -4,5 +4,5 @@ plugins {
 }
 rootProject.name = "DobriyShkafApp"
 
-// Два независимых модуля для параллельной работы frontend и backend разработчиков.
-include("frontend", "backend")
+// Ветка frontend/base подключает только frontend-модуль.
+include("frontend")
