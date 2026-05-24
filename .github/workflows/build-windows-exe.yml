@@ -34,18 +34,18 @@ jobs:
 
       - name: Show installDist output
         run: |
-          Get-ChildItem -Recurse build/install
+          Get-ChildItem -Recurse frontend/build/install
         shell: pwsh
 
       - name: Build EXE with jpackage
         run: |
           jpackage `
-            --type exe `
-            --name DatabaseApp `
-            --input build/install/DatabaseApp/lib `
-            --main-jar DatabaseApp.jar `
-            --main-class MainKt `
-            --dest build/jpackage
+          --type exe `
+          --name DobriyShkafApp `
+          --input frontend/build/install/frontend/lib `
+          --main-jar frontend.jar `
+          --main-class MainKt `
+          --dest build/jpackage
         shell: pwsh
 
       - name: Upload EXE artifact
