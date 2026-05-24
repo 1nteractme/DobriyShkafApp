@@ -15,8 +15,12 @@ kotlin {
 }
 
 application {
-//    mainClass.set("org.example.MainKt")
+    mainClass.set("org.example.MainKt")
     applicationName = "Dobriy Shkaf"
+}
+
+tasks.jar {
+    archiveFileName.set("frontend.jar")
 }
 
 sourceSets {
