@@ -19,6 +19,7 @@ import java.awt.Graphics2D
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.GridLayout
+import java.awt.Image
 import java.awt.Insets
 import java.awt.RenderingHints
 import java.time.LocalDate
@@ -46,7 +47,7 @@ import javax.swing.event.DocumentListener
 import javax.swing.table.AbstractTableModel
 
 /// Главное окно frontend-приложения для просмотра и редактирования семей.
-class FamilyAdminFrame(private val store: FamilyStore) : JFrame("Отчёт город Спутник")
+class FamilyAdminFrame(private val store: FamilyStore, private val appIcon: Image? = null) : JFrame("Dobriy Shkaf")
 {
     private val tableModel = FamiliesTableModel()
     private val table = JTable(tableModel)
@@ -66,6 +67,7 @@ class FamilyAdminFrame(private val store: FamilyStore) : JFrame("Отчёт го
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
         minimumSize = Dimension(1120, 720)
+        appIcon?.let { iconImage = it }
         setLocationRelativeTo(null)
 
         contentPane = JPanel(BorderLayout(12, 12)).apply {
@@ -264,13 +266,7 @@ class FamilyAdminFrame(private val store: FamilyStore) : JFrame("Отчёт го
         deleteButton.addActionListener {
             val id = store.state.selectedId ?: return@addActionListener
 
-            val result = JOptionPane.showConfirmDialog(
-                this,
-                "Удалить семью id=$id?",
-                "Подтверждение",
-                JOptionPane.YES_NO_OPTION)
-
-            if (result == JOptionPane.YES_OPTION)
+            if (confirmDelete(id))
                 store.dispatch(FamilyIntent.DeleteSelected)
         }
 
@@ -282,6 +278,21 @@ class FamilyAdminFrame(private val store: FamilyStore) : JFrame("Отчёт го
                 store.dispatch(FamilyIntent.SelectFamily(id))
             }
         }
+    }
+
+    /// Показывает подтверждение удаления без иконки приложения в окне диалога.
+    private fun confirmDelete(id: Long): Boolean {
+        val optionPane = JOptionPane(
+            "Удалить семью id=$id?",
+            JOptionPane.PLAIN_MESSAGE,
+            JOptionPane.YES_NO_OPTION)
+
+        val dialog = optionPane.createDialog(this, "Подтверждение")
+        dialog.iconImages = emptyList<Image>()
+        dialog.isVisible = true
+        dialog.dispose()
+
+        return optionPane.value == JOptionPane.YES_OPTION
     }
 
     /// Отрисовывает новое состояние экрана.

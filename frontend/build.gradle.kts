@@ -15,7 +15,14 @@ kotlin {
 }
 
 application {
-    mainClass.set("org.example.MainKt")
+//    mainClass.set("org.example.MainKt")
+    applicationName = "Dobriy Shkaf"
+}
+
+sourceSets {
+    main {
+        resources.srcDir("src/main/kotlin/resources")
+    }
 }
 
 tasks.test {
