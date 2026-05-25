@@ -33,35 +33,51 @@ class FamilyStore(private val apiClient: FamilyApiClient = FamilyApiClient())
         when (intent) {
             FamilyIntent.LoadFamilies -> loadFamilies()
             is FamilyIntent.SelectFamily -> selectFamily(intent.id)
-            FamilyIntent.CreateDraft -> reduce { copy(selectedId = null, draft = Family(), error = null) }
+            FamilyIntent.CreateDraft -> reduce { copy(selectedId = null, draft = Family(), error = null, operationError = null) }
 
-            is FamilyIntent.ChangeTextField -> reduce { copy(draft = draft.withField(intent.field, intent.value), error = null) }
+            is FamilyIntent.ChangeTextField -> reduce { copy(draft = draft.withField(intent.field, intent.value), operationError = null) }
 
-            is FamilyIntent.ChangeBooleanField -> reduce { copy(draft = draft.withBooleanField(intent.field, intent.value), error = null) }
+            is FamilyIntent.ChangeBooleanField -> reduce { copy(draft = draft.withBooleanField(intent.field, intent.value), operationError = null) }
 
             FamilyIntent.SaveDraft -> saveDraft()
             FamilyIntent.DeleteSelected -> deleteSelected()
-            FamilyIntent.ClearError -> reduce { copy(error = null) }
+            FamilyIntent.ClearError -> reduce { copy(error = null, operationError = null) }
         }
     }
 
     private fun loadFamilies() {
-        reduce { copy(isLoading = true, error = null) }
+        reduce { copy(isLoading = true, error = null, operationError = null) }
         executor.execute {
-            runCatching { apiClient.getAllFamilies().sortedBy { it.familyNumber ?: Int.MAX_VALUE } }
-                .onSuccess { families ->
+            runCatching {
+                val families = apiClient.getAllFamilies().sortedBy { it.familyNumber ?: Int.MAX_VALUE }
+                val databaseSizeBytes = runCatching { apiClient.getDatabaseSizeBytes() }.getOrNull()
+                families to databaseSizeBytes
+            }
+                .onSuccess { result ->
                     reduce {
-                        val nextSelectedId = selectedId?.takeIf { id -> families.any { it.id == id } }
+                        val loadedFamilies = result.first
+                        val nextSelectedId = selectedId?.takeIf { id -> loadedFamilies.any { it.id == id } }
                         copy(
-                            families = families,
+                            families = loadedFamilies,
+                            databaseSizeBytes = result.second,
                             selectedId = nextSelectedId,
-                            draft = families.firstOrNull { it.id == nextSelectedId } ?: draft,
-                            isLoading = false
+                            draft = loadedFamilies.firstOrNull { it.id == nextSelectedId } ?: draft,
+                            isLoading = false,
+                            error = null
                         )
                     }
                 }
                 .onFailure { throwable ->
-                    reduce { copy(isLoading = false, error = throwable.userMessage()) }
+                    reduce {
+                        copy(
+                            families = emptyList(),
+                            databaseSizeBytes = null,
+                            selectedId = null,
+                            draft = Family(),
+                            isLoading = false,
+                            error = throwable.userMessage()
+                        )
+                    }
                 }
         }
     }
@@ -72,14 +88,14 @@ class FamilyStore(private val apiClient: FamilyApiClient = FamilyApiClient())
             copy(
                 selectedId = selected?.id,
                 draft = selected ?: Family(),
-                error = null
+                operationError = null
             )
         }
     }
 
     private fun saveDraft() {
         val draftToSave = state.draft
-        reduce { copy(isSaving = true, error = null) }
+        reduce { copy(isSaving = true, operationError = null) }
 
         executor.execute {
             runCatching {
@@ -95,16 +111,17 @@ class FamilyStore(private val apiClient: FamilyApiClient = FamilyApiClient())
                         families = updatedFamilies,
                         selectedId = saved.id,
                         draft = saved,
-                        isSaving = false
+                        isSaving = false,
+                        operationError = null
                     )
                 }
-            }.onFailure { throwable -> reduce { copy(isSaving = false, error = throwable.userMessage()) } }
+            }.onFailure { throwable -> reduce { copy(isSaving = false, operationError = throwable.userMessage()) } }
         }
     }
 
     private fun deleteSelected() {
         val id = state.selectedId ?: return
-        reduce { copy(isSaving = true, error = null) }
+        reduce { copy(isSaving = true, operationError = null) }
 
         executor.execute {
             runCatching { apiClient.deleteFamily(id) }
@@ -114,11 +131,12 @@ class FamilyStore(private val apiClient: FamilyApiClient = FamilyApiClient())
                             families = families.filterNot { it.id == id },
                             selectedId = null,
                             draft = Family(),
-                            isSaving = false
+                            isSaving = false,
+                            operationError = null
                         )
                     }
                 }
-                .onFailure { throwable -> reduce { copy(isSaving = false, error = throwable.userMessage()) } }
+                .onFailure { throwable -> reduce { copy(isSaving = false, operationError = throwable.userMessage()) } }
         }
     }
 

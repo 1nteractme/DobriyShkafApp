@@ -1,5 +1,6 @@
 package com.interactme.ui
 
+import com.interactme.AppInfo
 import com.interactme.data.Family
 import com.interactme.data.FamilyField
 import com.interactme.data.PaymentType
@@ -9,6 +10,7 @@ import com.interactme.mvi.FamilyState
 import com.interactme.mvi.FamilyStore
 import java.awt.BasicStroke
 import java.awt.BorderLayout
+import java.awt.CardLayout
 import java.awt.Color
 import java.awt.Component
 import java.awt.Dimension
@@ -19,6 +21,7 @@ import java.awt.Graphics2D
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.GridLayout
+import java.awt.Image
 import java.awt.Insets
 import java.awt.RenderingHints
 import java.time.LocalDate
@@ -41,22 +44,33 @@ import javax.swing.JTextField
 import javax.swing.JToggleButton
 import javax.swing.ListSelectionModel
 import javax.swing.SwingConstants
+import javax.swing.SwingUtilities
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import javax.swing.table.AbstractTableModel
 
+private const val TABLE_CARD = "table"
+private const val ERROR_CARD = "error"
+
 /// Главное окно frontend-приложения для просмотра и редактирования семей.
-class FamilyAdminFrame(private val store: FamilyStore) : JFrame("Отчёт город Спутник")
+class FamilyAdminFrame(private val store: FamilyStore, private val appIcon: Image? = null) : JFrame("Dobriy Shkaf")
 {
     private val tableModel = FamiliesTableModel()
     private val table = JTable(tableModel)
     private val statusLabel = JLabel("Готово")
     private val refreshButton = JButton("Обновить")
+    private val searchButton = JButton("Поиск")
     private val newButton = JButton("Новая")
     private val saveButton = JButton("Сохранить")
     private val deleteButton = JButton("Удалить")
+    private val settingsButton = JButton(UiIcon.Settings)
+    private val tableCards = JPanel(CardLayout())
+    private val tableErrorMessage = JLabel("", SwingConstants.CENTER)
     private val formPanel = JPanel()
+    private lateinit var contentSplitPane: JSplitPane
+    private lateinit var formContainer: JPanel
     private var renderingState = false
+    private var displayedOperationError: String? = null
 
     private val textInputs = mutableMapOf<FamilyField, Component>()
     private val booleanInputs = mutableMapOf<FamilyField, JCheckBox>()
@@ -66,6 +80,7 @@ class FamilyAdminFrame(private val store: FamilyStore) : JFrame("Отчёт го
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
         minimumSize = Dimension(1120, 720)
+        appIcon?.let { iconImage = it }
         setLocationRelativeTo(null)
 
         contentPane = JPanel(BorderLayout(12, 12)).apply {
@@ -82,11 +97,19 @@ class FamilyAdminFrame(private val store: FamilyStore) : JFrame("Отчёт го
     }
 
     /// Верхняя панель основных действий.
-    private fun toolbar(): JPanel = JPanel(FlowLayout(FlowLayout.LEFT, 8, 0)).apply {
-        add(refreshButton)
-        add(newButton)
-        add(saveButton)
-        add(deleteButton)
+    private fun toolbar(): JPanel = JPanel(BorderLayout()).apply {
+        add(JPanel(FlowLayout(FlowLayout.LEFT, 8, 0)).apply {
+            add(refreshButton)
+            add(searchButton)
+            add(newButton)
+            add(saveButton)
+            add(deleteButton)
+        }, BorderLayout.WEST)
+
+        add(JPanel(FlowLayout(FlowLayout.RIGHT, 0, 0)).apply {
+            settingsButton.toolTipText = "Настройки"
+            add(settingsButton)
+        }, BorderLayout.EAST)
     }
 
     /// Основная область: таблица слева и форма редактирования справа.
@@ -97,19 +120,23 @@ class FamilyAdminFrame(private val store: FamilyStore) : JFrame("Отчёт го
         table.fillsViewportHeight = true
 
         val tablePanel = JPanel(BorderLayout()).apply {
+            tableCards.add(JScrollPane(table), TABLE_CARD)
+            tableCards.add(errorPlaceholder(), ERROR_CARD)
+
             add(JLabel("Семьи", SwingConstants.LEFT).styledHeader(), BorderLayout.NORTH)
-            add(JScrollPane(table), BorderLayout.CENTER)
+            add(tableCards, BorderLayout.CENTER)
         }
 
-        val formContainer = JPanel(BorderLayout()).apply {
+        formContainer = JPanel(BorderLayout()).apply {
             add(JLabel("Карточка семьи", SwingConstants.LEFT).styledHeader(), BorderLayout.NORTH)
             add(JScrollPane(formPanel), BorderLayout.CENTER)
         }
 
-        return JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tablePanel, formContainer).apply {
+        contentSplitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tablePanel, formContainer).apply {
             resizeWeight = 0.44
             dividerLocation = 500
         }
+        return contentSplitPane
     }
 
     /// Строит форму по описанию полей и группирует номиналы в раскрывающиеся блоки.
@@ -254,6 +281,8 @@ class FamilyAdminFrame(private val store: FamilyStore) : JFrame("Отчёт го
     private fun wireIntents() {
         refreshButton.addActionListener { store.dispatch(FamilyIntent.LoadFamilies) }
 
+        searchButton.addActionListener { showFamilySearchDialog() }
+
         newButton.addActionListener {
             table.clearSelection()
             store.dispatch(FamilyIntent.CreateDraft)
@@ -261,16 +290,12 @@ class FamilyAdminFrame(private val store: FamilyStore) : JFrame("Отчёт го
 
         saveButton.addActionListener { store.dispatch(FamilyIntent.SaveDraft) }
 
+        settingsButton.addActionListener { showSettingsDialog() }
+
         deleteButton.addActionListener {
             val id = store.state.selectedId ?: return@addActionListener
 
-            val result = JOptionPane.showConfirmDialog(
-                this,
-                "Удалить семью id=$id?",
-                "Подтверждение",
-                JOptionPane.YES_NO_OPTION)
-
-            if (result == JOptionPane.YES_OPTION)
+            if (confirmDelete(id))
                 store.dispatch(FamilyIntent.DeleteSelected)
         }
 
@@ -282,6 +307,78 @@ class FamilyAdminFrame(private val store: FamilyStore) : JFrame("Отчёт го
                 store.dispatch(FamilyIntent.SelectFamily(id))
             }
         }
+    }
+
+    /// Показывает заглушку ошибки вместо таблицы семей.
+    private fun errorPlaceholder(): JPanel = JPanel(GridBagLayout()).apply {
+        border = BorderFactory.createEmptyBorder(24, 24, 24, 24)
+        add(JPanel(GridBagLayout()).apply {
+            add(JLabel("Не удалось загрузить список семей", SwingConstants.CENTER).apply {
+                font = font.deriveFont(Font.BOLD, 16f)
+                foreground = Color(0xB00020)
+            }, GridBagConstraints().apply {
+                gridx = 0
+                gridy = 0
+                insets = Insets(0, 0, 8, 0)
+            })
+            add(tableErrorMessage.apply {
+                foreground = Color(0x5D687A)
+            }, GridBagConstraints().apply {
+                gridx = 0
+                gridy = 1
+                fill = GridBagConstraints.HORIZONTAL
+            })
+        })
+    }
+
+    /// Открывает окно поиска семьи по номеру.
+    private fun showFamilySearchDialog() {
+        val rawValue = JOptionPane.showInputDialog(
+            this,
+            "Введите номер семьи:",
+            "Поиск семьи",
+            JOptionPane.PLAIN_MESSAGE
+        ) ?: return
+
+        val familyNumber = rawValue.trim().toIntOrNull()
+        if (familyNumber == null) {
+            JOptionPane.showMessageDialog(this, "Введите целое число.", "Поиск семьи", JOptionPane.PLAIN_MESSAGE)
+            return
+        }
+
+        val family = store.state.families.firstOrNull { it.familyNumber == familyNumber }
+        if (family == null) {
+            JOptionPane.showMessageDialog(this, "Семья с номером $familyNumber не найдена.", "Поиск семьи", JOptionPane.PLAIN_MESSAGE)
+            return
+        }
+
+        store.dispatch(FamilyIntent.SelectFamily(family.id))
+        SwingUtilities.invokeLater(::scrollSelectedRowToVisible)
+    }
+
+    /// Открывает пустое окно настроек.
+    private fun showSettingsDialog() {
+        JOptionPane.showMessageDialog(this, "Настройки", "Настройки", JOptionPane.PLAIN_MESSAGE)
+    }
+
+    /// Показывает подтверждение удаления без иконки приложения в окне диалога.
+    private fun confirmDelete(id: Long): Boolean {
+        val optionPane = JOptionPane(
+            "Удалить семью id=$id?",
+            JOptionPane.PLAIN_MESSAGE,
+            JOptionPane.YES_NO_OPTION)
+
+        val dialog = optionPane.createDialog(this, "Подтверждение")
+        dialog.iconImages = emptyList<Image>()
+        dialog.isVisible = true
+        dialog.dispose()
+
+        return optionPane.value == JOptionPane.YES_OPTION
+    }
+
+    private fun scrollSelectedRowToVisible() {
+        val row = table.selectedRow
+        if (row >= 0) table.scrollRectToVisible(table.getCellRect(row, 0, true))
     }
 
     /// Отрисовывает новое состояние экрана.
@@ -299,18 +396,70 @@ class FamilyAdminFrame(private val store: FamilyStore) : JFrame("Отчёт го
 
         renderDraft(state.draft)
         val busy = state.isLoading || state.isSaving
+        val hasLoadError = state.error != null
+        renderTableError(state.error)
         refreshButton.isEnabled = !busy
-        newButton.isEnabled = !busy
-        saveButton.isEnabled = !busy
-        deleteButton.isEnabled = !busy && state.selectedId != null
-        statusLabel.foreground = if (state.error == null) Color(0x2F6F44) else Color(0xB00020)
+        searchButton.isEnabled = !busy && !hasLoadError && state.families.isNotEmpty()
+        newButton.isEnabled = !busy && !hasLoadError
+        saveButton.isEnabled = !busy && !hasLoadError
+        deleteButton.isEnabled = !busy && !hasLoadError && state.selectedId != null
+        settingsButton.isEnabled = true
+        statusLabel.foreground = Color(0x2F6F44)
         statusLabel.text = when {
             state.isLoading -> "Загрузка..."
             state.isSaving -> "Сохранение..."
-            state.error != null -> state.error
-            else -> "Записей: ${state.families.size}"
+            else -> "Записей: ${state.families.size} | Размер БД: ${state.databaseSizeBytes.asFileSize()} | Версия: ${AppInfo.version}"
         }
         renderingState = false
+        renderOperationError(state.operationError)
+    }
+
+    private fun renderTableError(error: String?) {
+        val layout = tableCards.layout as CardLayout
+        if (error == null) {
+            layout.show(tableCards, TABLE_CARD)
+            showFormContainer()
+            return
+        }
+
+        tableErrorMessage.text = "<html><div style='text-align:center;width:360px;'>${error.escapeHtml()}</div></html>"
+        layout.show(tableCards, ERROR_CARD)
+        hideFormContainer()
+    }
+
+    private fun showFormContainer() {
+        if (contentSplitPane.rightComponent === formContainer) return
+
+        contentSplitPane.rightComponent = formContainer
+        contentSplitPane.resizeWeight = 0.44
+        contentSplitPane.dividerLocation = 500
+        contentSplitPane.revalidate()
+        contentSplitPane.repaint()
+    }
+
+    private fun hideFormContainer() {
+        if (contentSplitPane.rightComponent == null) return
+
+        contentSplitPane.rightComponent = null
+        contentSplitPane.resizeWeight = 1.0
+        contentSplitPane.dividerLocation = contentSplitPane.width
+        contentSplitPane.revalidate()
+        contentSplitPane.repaint()
+    }
+
+    private fun renderOperationError(error: String?) {
+        if (error == null) {
+            displayedOperationError = null
+            return
+        }
+
+        if (displayedOperationError == error) return
+        displayedOperationError = error
+
+        SwingUtilities.invokeLater {
+            JOptionPane.showMessageDialog(this, error, "Ошибка", JOptionPane.PLAIN_MESSAGE)
+            store.dispatch(FamilyIntent.ClearError)
+        }
     }
 
     /// Заполняет форму значениями выбранной или новой семьи.
@@ -355,6 +504,27 @@ class FamilyAdminFrame(private val store: FamilyStore) : JFrame("Отчёт го
         is LocalDate -> toString()
         else -> toString()
     }
+
+    private fun Long?.asFileSize(): String {
+        val bytes = this ?: return "неизвестно"
+        if (bytes < 1024) return "$bytes Б"
+
+        val units = listOf("КБ", "МБ", "ГБ")
+        var value = bytes.toDouble()
+        var unitIndex = -1
+        while (value >= 1024 && unitIndex < units.lastIndex) {
+            value /= 1024
+            unitIndex++
+        }
+
+        return "%.1f %s".format(value, units[unitIndex])
+    }
+
+    private fun String.escapeHtml(): String =
+        replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
 }
 
 /// Простой Swing-виджет выбора даты без внешних зависимостей.
@@ -470,7 +640,8 @@ private enum class UiIcon : Icon {
     ChevronRight,
     ChevronDown,
     Close,
-    Calendar;
+    Calendar,
+    Settings;
 
     override fun getIconWidth(): Int = 16
 
@@ -504,6 +675,17 @@ private enum class UiIcon : Icon {
                 g.drawLine(x + 3, y + 7, x + 13, y + 7)
                 g.drawLine(x + 6, y + 3, x + 6, y + 5)
                 g.drawLine(x + 10, y + 3, x + 10, y + 5)
+            }
+            Settings -> {
+                g.drawOval(x + 5, y + 5, 6, 6)
+                g.drawLine(x + 8, y + 2, x + 8, y + 4)
+                g.drawLine(x + 8, y + 12, x + 8, y + 14)
+                g.drawLine(x + 2, y + 8, x + 4, y + 8)
+                g.drawLine(x + 12, y + 8, x + 14, y + 8)
+                g.drawLine(x + 4, y + 4, x + 5, y + 5)
+                g.drawLine(x + 11, y + 11, x + 12, y + 12)
+                g.drawLine(x + 12, y + 4, x + 11, y + 5)
+                g.drawLine(x + 5, y + 11, x + 4, y + 12)
             }
         }
 

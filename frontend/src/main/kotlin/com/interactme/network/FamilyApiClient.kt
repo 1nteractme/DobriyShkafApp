@@ -30,6 +30,12 @@ class FamilyApiClient(
         return request("/all", "GET", null, type) ?: emptyList()
     }
 
+    /// Загружает размер серверной базы данных в байтах.
+    fun getDatabaseSizeBytes(): Long? {
+        val type = object : TypeToken<ApiResponse<Long>>() {}.type
+        return request("/database-size", "GET", null, type)
+    }
+
     /// Создаёт новую семью через backend.
     fun createFamily(family: Family): Family {
         val type = object : TypeToken<ApiResponse<Family>>() {}.type

@@ -1,0 +1,74 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Application version, for example 1.2.3
+        required: false
+        default: ""
+  push:
+    branches:
+      - main
+      - master
+
+env:
+  APP_VERSION: ${{ github.event.inputs.version || format('0.0.{0}', github.run_number) }}
+
+jobs:
+  build-windows-exe:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build app distribution
+        run: ./gradlew :frontend:installDist -PappVersion="$APP_VERSION"
+        shell: bash
+
+      - name: Show installDist output
+        run: Get-ChildItem -Recurse "frontend/build/install"
+        shell: pwsh
+
+      - name: Build EXE with jpackage
+        run: |
+          $inputDir = "frontend/build/install/Dobriy Shkaf/lib"
+          $mainJar = "frontend.jar"
+
+          if (!(Test-Path "$inputDir/$mainJar")) {
+            Get-ChildItem -Recurse "frontend/build/install"
+            throw "Main jar $mainJar was not found in $inputDir"
+          }
+
+          New-Item -ItemType Directory -Force "build/jpackage" | Out-Null
+
+          jpackage `
+            --type exe `
+            --name "Dobriy Shkaf" `
+            --app-version "$env:APP_VERSION" `
+            --vendor "Dobriy Shkaf" `
+            --description "Dobriy Shkaf desktop application" `
+            --input "$inputDir" `
+            --main-jar "$mainJar" `
+            --main-class "org.example.MainKt" `
+            --dest "build/jpackage" `
+            --win-dir-chooser `
+            --win-menu `
+            --win-shortcut
+        shell: pwsh
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dobriy-Shkaf-Windows-EXE
+          path: build/jpackage/*.exe
