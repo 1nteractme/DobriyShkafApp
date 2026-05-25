@@ -2,10 +2,18 @@ name: Build Windows EXE
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: Application version, for example 1.2.3
+        required: false
+        default: ""
   push:
     branches:
       - main
       - master
+
+env:
+  APP_VERSION: ${{ github.event.inputs.version || format('0.0.{0}', github.run_number) }}
 
 jobs:
   build-windows-exe:
@@ -25,7 +33,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build app distribution
-        run: ./gradlew :frontend:installDist
+        run: ./gradlew :frontend:installDist -PappVersion="$APP_VERSION"
         shell: bash
 
       - name: Show installDist output
@@ -47,7 +55,7 @@ jobs:
           jpackage `
             --type exe `
             --name "Dobriy Shkaf" `
-            --app-version "1.0.0" `
+            --app-version "$env:APP_VERSION" `
             --vendor "Dobriy Shkaf" `
             --description "Dobriy Shkaf desktop application" `
             --input "$inputDir" `

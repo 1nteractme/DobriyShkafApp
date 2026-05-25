@@ -5,10 +5,14 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
+val appVersion = providers.gradleProperty("appVersion")
+    .orElse(providers.environmentVariable("APP_VERSION"))
+    .orElse("0.0.2-SNAPSHOT")
+
 allprojects {
     // Общие координаты и репозитории для backend и frontend.
     group = "org.example"
-    version = "1.0-SNAPSHOT"
+    version = appVersion.get()
 
     repositories {
         mavenCentral()
