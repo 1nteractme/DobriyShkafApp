@@ -12,10 +12,10 @@
         <p class="eyebrow">Добрый Шкаф</p>
         <div class="brand-title">
             <img class="site-logo" src="res/logo.png" alt="Логотип Добрый Шкаф">
-            <h1>Dobriy Shkaf Application</h1>
+            <h1>Dobriy Shkaf</h1>
         </div>
-        <p class="lead">Проект <code>Dobriy Shkaf Application</code> представляет собой монорепозиторий и собранное
-            десктоп приложение, созданное для некоммерческой организации "Добрый Шкаф" в рамках выполнения студенческого
+        <p class="lead">Проект <code>Dobriy Shkaf</code> представляет собой монорепозиторий и собранное
+            десктоп-приложение для операционных систем Windows и MacOS, созданное для социального проекта <code>Добрый Шкаф</code> НКО <code>Российский детский фонд</code> в рамках выполнения студенческого
             социального заказа.</p>
     </header>
 
@@ -37,6 +37,7 @@
             </button>
         </div>
 
+<!--        Техническая документация-->
         <article class="panel active" id="panel-tech" role="tabpanel" aria-labelledby="tab-tech" tabindex="0">
             <h2>Техническая документация</h2>
             <p>Монорепозиторий содержит настольный frontend на Kotlin и backend на Java/Spring. Модули живут отдельно и
@@ -47,12 +48,16 @@
                     <h3>Frontend</h3>
                     <p>Модуль <code>frontend</code> реализует Swing-приложение с MVI-подходом для удобной работы с
                         данными.</p>
+                    <a href="https://github.com/1nteractme/DobriyShkafApp/tree/frontend" target="_blank"
+                       rel="noreferrer">Посмотреть frontend модуль</a>
                 </section>
 
                 <section class="info-card">
                     <h3>Backend</h3>
                     <p>Модуль <code>backend</code> предоставляет Spring REST API для получения, создания, обновления и
                         удаления семей.</p>
+                    <a href="https://github.com/1nteractme/DobriyShkafApp/tree/backend" target="_blank"
+                       rel="noreferrer">Посмотреть backend модуль</a>
                 </section>
             </div>
 
@@ -128,11 +133,12 @@
 
             <h3>Работа с ветками</h3>
             <p>
-                Основная интеграционная ветка: <code>main</code>. После завершения задачи изменения из
+                Основная интеграционная ветка: <code>main</code>. После завершения задачи изменения из веток
                 <code>frontend</code> или <code>backend</code> объединяются в <code>main</code> через PR или merge.
             </p>
         </article>
 
+<!--        Пользовательская документация-->
         <article class="panel" id="panel-user" role="tabpanel" aria-labelledby="tab-user" tabindex="0">
             <img src="res/preview.png" alt="User Interface Preview" style="width: 100%">
             <h2>Пользовательская документация</h2>
@@ -144,16 +150,13 @@
 
             <h3>Начало работы</h3>
             <ol>
-                <li>Запустите приложение командой <code>./gradlew :frontend:run</code> или установив, а затем запустив
-                    <code>Dobriy Shkaf.exe</code>.
+                <li>Установите на рабочий компьютер приложение <code>Dobriy Shkaf</code>, запустив исполнительный файл <code>Dobriy Shkaf.exe</code>.
                 </li>
                 <li>Дождитесь загрузки списка семей в левой таблице.</li>
                 <li>Выберите нужную строку, чтобы открыть карточку семьи справа.</li>
             </ol>
 
-            <div class="green-note">Если список не загружается, проверьте наличие Интернета на персональном
-                компьютере.
-            </div>
+            <div class="green-note">Если список семей не загружается, проверьте подключение к центральному серверу.</div>
             <div class="red-note">
                 При столкновении с какими-либо сложностями или неполадками мы крайне рекомендуем связаться с
                 разработчиками в Telegram.
@@ -185,6 +188,10 @@
                 <tr>
                     <td><code>Удалить</code></td>
                     <td>Удаляет выбранную карточку после подтверждения.</td>
+                </tr>
+                <tr>
+                    <td><code>Найти</code></td>
+                    <td>Открывает всплывающее окно с вводом номера семьи.</td>
                 </tr>
                 </tbody>
             </table>
@@ -226,6 +233,7 @@
             </ol>
         </article>
 
+<!--        Обновления проекта-->
         <article class="panel" id="panel-updates" role="tabpanel" aria-labelledby="tab-updates" tabindex="0">
             <h2>Обновления проекта</h2>
             <p>
