@@ -3,6 +3,7 @@ package com.iapp.iapp_messenger.controller;
 import com.iapp.iapp_messenger.dao.dto.ApiResponse;
 import com.iapp.iapp_messenger.dao.hibernate.Family;
 import com.iapp.iapp_messenger.dao.hibernate.FamilyRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,15 +15,27 @@ import java.util.List;
 public class RESTFamilyAdminController {
 
     private final FamilyRepository familyRepository;
+    private final JdbcTemplate jdbcTemplate;
 
-    public RESTFamilyAdminController(FamilyRepository familyRepository) {
+    public RESTFamilyAdminController(FamilyRepository familyRepository, JdbcTemplate jdbcTemplate) {
         this.familyRepository = familyRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     /// Получить всю таблицу семей.
     @GetMapping("/all")
     public ApiResponse<List<Family>> getAllFamilies() {
         return ApiResponse.ok(familyRepository.findAll());
+    }
+
+    /// Получить размер текущей PostgreSQL базы данных в байтах.
+    @GetMapping("/database-size")
+    public ApiResponse<Long> getDatabaseSize() {
+        Long size = jdbcTemplate.queryForObject(
+                "select pg_database_size(current_database())",
+                Long.class);
+
+        return ApiResponse.ok(size);
     }
 
     /// Получить одну семью по идентификатору.
